@@ -1,16 +1,23 @@
+%%% Nonparametric Power-law Data Clustering
+
+
 function c, clusters = pyp_means(values, counts, lambda, theta)
 
     %% Initialization
     len = length(values)
 
-    c = 1;
     clusters = struct('means', [], 'assignments', [], 'c', 0)
 
     m1 = dot(values, counts)/len
-    clusters.means = [clusters.means; m1]
-    clusters.assignments = [clusters.assignments; 1:len]
+    clusters.means = [clusters.means; m1] %array of cluster means
+    clusters.assignments = [clusters.assignments; 1:len] %array of cluster assignments for each cluster
+    
+    keyset = 1:len
+    valueset = zeros(257,1)
+    clusters.map = containers.Map(keyset, valueset) % map for x (index in values) to cluster
     
     %% Loop until convergence
+    %%% NEED TO ADD WHILE LOOP
     
     D_r = [];
     for i = 1:len
@@ -30,13 +37,17 @@ function c, clusters = pyp_means(values, counts, lambda, theta)
                clusters = assign_cluster(i, min_idx, clusters)
      
            end
-           clusters = re_cluster(D_r, clusters, values, counts, lambda, theta)
-           
-           % update c, means
-           cluster.means = calc_cluster_means(cluster, values, counts)
-           
-           
-        end   
+        end
+        
+        % re-cluster the unclustered data set D_r
+       clusters = re_cluster(D_r, clusters, values, counts, lambda, theta)
+
+       % center agglomeration
+       clusters = center_agglomeration(clusters, lambda, theta)
+
+       % update c, means
+       clusters.means = calc_cluster_means(clusters, values, counts)
+        
     end
 
     
@@ -46,8 +57,23 @@ end
 
 
 function z = assign_cluster(i, min_idx, clusters)
-
     c = length(clusters)
+   
+    len = length(min_idx)
+    if len > 1
+        k_assigned = min_idx(unidrnd(len))
+    end
+   
+    k_past = clusters.map(i) %find out where it was assigned before
+    clusters.map(i) = k_assigned %now update map assignment
+    
+    % find x_idx in old assignment list and add to new cluster assignment
+    
+    old_idx = find(clusters.assignments(k_past) == i)
+    
+    
+    
+    clusters.assignments(k_assigned) = [clusters.assignments(k_assigned; i]
    
 end
 
@@ -58,29 +84,18 @@ function means = calc_cluster_means(cluster, values, counts)
     for k = 1:c
        
         assignments = clusters.assignments(k);
-        l = length(assignments)
+        len = length(assignments)
         sum = 0;
         
-        for i = 1:l
+        for i = 1:len
             idx = assignments(i)
             sum = sum + values(idx) * counts(udx)
         end
         
-        mean = sum/l
+        mean = sum/len
         
         clusters.means(k) = mean
-        
-        
-        
-        
-        
-        
-        
     end
-
-
-
-
 end
 
 
@@ -220,6 +235,9 @@ function clusters = combine_clusters(clusters, i, j)
     clusters.means = [clusters.means; mean]
     clusters.assignments = [clusters.assignments; assignments]
     clusters.c = length(clusters.means)
+    
+    
+    % UPDATE clusters.map
 
 end
 
