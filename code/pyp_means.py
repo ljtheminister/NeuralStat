@@ -14,9 +14,6 @@ class Pyp_means(self):
 	self.clusters = pyp_means(self.freq, self.lamb, self.theta)
 
 
-
-
-
     def pyp_means(freq, lamb, theta):
 	
 	## INITIALIZATION
@@ -54,6 +51,7 @@ class Pyp_means(self):
 
 
     def assign_clusters(x, new_cluster, clusters):
+
 	# find and remove old assignment
 	prev_cluster = clusters.map(x)
 	clusters.assignments[prev_cluster].remove(x)
@@ -61,7 +59,6 @@ class Pyp_means(self):
 	clusters.map(x) = new_cluster 
 	clusters.assignments[new_cluster].append(x)
 	return clusters
-
 
 
     def update(clusters, freq):
@@ -86,7 +83,32 @@ class Pyp_means(self):
 		d[cluster_mean] = np.power((x - cluster_mean),2) #squared difference between x and cluster mean
 		max_d = max(d)
 		
-	    
-
-
+		x_1 = 0
+	if d_max - theta > lamb - np.log(clusters.c)*theta:
+	    clusters.c += 1
+	    clusters.assignments[x_1] = [] 
     
+	else:
+	     
+
+	return clusters
+
+
+    def center_agglomeration(clusters, lamb, theta):
+	c = clusters.c	
+	agglom_term = lamb - theta*(np.log(np.power(c+1, c+1)/np.power(c, c)))
+	
+	means = clusters.assignments.keys()
+
+	d = dict()
+	for i in xrange(c-1): 
+	    for j = xrange(i+1,c):
+		d(i,j) = np.power(means(i) - means(j),2)	
+
+
+	
+
+	return clusters
+    
+    def combine_clusters(clusters, m1, m2):
+	
