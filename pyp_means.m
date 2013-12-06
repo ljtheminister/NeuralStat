@@ -33,7 +33,7 @@ function c, clusters = pyp_means(values, counts, lambda, theta)
            clusters = re_cluster(D_r, clusters, values, counts, lambda, theta)
            
            % update c, means
-           cluster.means = calc_cluster_means(cluster.means, values, counts)
+           cluster.means = calc_cluster_means(cluster, values, counts)
            
            
         end   
@@ -52,7 +52,32 @@ function z = assign_cluster(i, min_idx, clusters)
 end
 
 
-function means = calc_cluster_means(cluster_means, values, counts)
+function means = calc_cluster_means(cluster, values, counts)
+
+    c = cluster.c
+    for k = 1:c
+       
+        assignments = clusters.assignments(k);
+        l = length(assignments)
+        sum = 0;
+        
+        for i = 1:l
+            idx = assignments(i)
+            sum = sum + values(idx) * counts(udx)
+        end
+        
+        mean = sum/l
+        
+        clusters.means(k) = mean
+        
+        
+        
+        
+        
+        
+        
+    end
+
 
 
 
@@ -99,11 +124,42 @@ function clusters = re_cluster(D_r, clusters, values, counts, lambda, theta)
     end
 end
 
-function clusters = center_agglomeration(clusters)
+function clusters = center_agglomeration(clusters, lambda, theta)
 
     % create inter_cluster_d_ij
     % sort (i,j) by d_ij in ascending order
     % check_agglom for each (i,j) pair
+    
+    c = clusters.c;
+    agglom_term = lambda - theta * log(((c+1)^(c+1))/c^c;
+    
+        
+    d = zeros(i,j) %inter-cluster pair-wise squared distance matrix
+    
+    for i = 1 : c-1
+        for j = i+1 : c
+            d(i,j) = (clusters.means(i) - clusters.means(j))^2        
+        end
+    end
+    
+    
+    
+    
+    
+    
+    for i = 1:c-1
+        
+        n1 = length(clusters.assignments(i));
+
+        
+        for j = i+1 : c
+            n2 = length(clusters.assignments(j));
+    
+            if d(i,j) < (n1 + n2)/(n1*n2) * agglom_term
+                clusters = combine_clusters(clusters, i, j)
+                break
+            end
+    
     
     % if satisfied == 1, combine the two clusters
 
@@ -133,29 +189,37 @@ end
 
 
 function clusters = combine_clusters(clusters, i, j)
-
-
-    assignments = [clusters.assignments(i), clusters.assignments(j)]
+    % combine_clusters will take two clusters and combine them such that
+    % all the points in the two clusters are now in a single cluster
     
-    sum = 0
+    % the cluster struct is updated by recomputing the mean, assignments,
+    % and c
+    
+    
+    % clusters:  the struct with assignments, means, and c (number of
+    % clusters)
+    
+    % i,j are indices of clusters to combine
+
+    assignments = [clusters.assignments(i), clusters.assignments(j)] %aggregating the point assignments into a single list
+    
+    sum = 0 %sum for mean re-computation
     
     for a = 1:length(assignments)
-        
         sum = sum + values(a) * counts(a)
-        
     end
     
-    mean = sum/a;
+    mean = sum/a; %newly recomputed mean for single cluster
 
-
+    % remove the two old clusters
     idx_to_remove = [i,j]
     clusters.assignments(idx_to_remove) = []
     clusters.means(idx_to_remove) = []
+    
+    % create new, single cluster and update struct
     clusters.means = [clusters.means; mean]
     clusters.assignments = [clusters.assignments; assignments]
     clusters.c = length(clusters.means)
-
-
 
 end
 
