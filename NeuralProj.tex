@@ -24,6 +24,24 @@ Flint et. al (2012)
 \section{Experiment}
 A rhesus monkey was trained to perform an eight-target, center-out task while holding onto a two-link manipulandum.  Eight 2 cm square outer targets spaced at 45$\,^{\circ}$ intervals around a circle of radius 10 cm.  Each trial begins with the illumination of the center target.  After a random hold time of 0.5-0.6 seconds, the center target disappears and a randomly selected outer target is illuminated, signaling the monkey to perform a reach movement.  The monkey must reach the outer target within 1.5 seconds and hold for a random time between 0.2 and 0.4 seconds to obtain a liquid reward.  
 
+\section{Flint et. al(2012}
+\noindent
+Flint et. al (2012) convert the spike signals to firing rates in 100 ms bins, extracting five features from each field potential signal:  the local motor potential (LMP), defined as the moving average within a 256 ms window, and the power in four different frequency bands (0-4, 7-20, 70-200, and 200-300 Hz).  The windows are overlapped by 145 ms to provide a sample every 100 ms.  After applying a Hanning window, fast Fourier transforms are applied to 256 ms windows to compute the power in each band.   \\
+
+\noindent
+The band power values (or spike firing rates) in seven time bins from 200 ms before to 500 ms after movement onset (as determined from the manipulandum's velocity) are used as features, providing 35 features for each field potential electrode (1995 features for the 57 electrodes in monkey C).  A one-way ANOVA is calculated over all the trials for each feature across reach targets as a method of reduce dimensionality of the input space.  40 features with the lowest p-values are chosen for use in decoding each file.  \\
+
+\noindent
+Linear discrminant analysis is applied to these features and ten-fold cross validation evaluates performance.  The mean performance for each file is defined as the fraction of trials that were decoded correctly over the ten test folds.  Chance performance for the center-out task was estimated by randomly shuffling the target labels, and then performing teh cross validation.
+
+\section{Nonparametric Bayesian Clustering}
+\noindent
+Fan, Zeng, and Cao (2013) propose a modification to "DP-means", which bridged the classic k-means clustering and the nonparametric Dirichlet Process Gaussian Mixture Model (DPGMM), by introducing a modified Pitman-Yor Process based k-means (pyp-means).  Pyp-means can be applied to cluster power-law data by dynamically and adaptively changing the threshold to guarantee the generation of poewr-law clustering results.  The threshold becomes smaller as the cluster number increases.  \\
+
+\noindent
+A center agglomeration procedure is also introduced to adaptively determine the number of clusters and avoid overfitting the power-law distribution of the data.  The clustering mechanism may result in two dense clusters whose means are quite close to each other.  The center agglomeration procedure will combine such clusters.  Essentially, the agglomeration check verifies that the inter-distance between each pair of cluster means is above a certain threshold 
+
+
 \section{Methodology}
 
 
