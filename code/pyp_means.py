@@ -24,28 +24,46 @@ class Pyp_means(self):
 	clusters.map = []
 
 	D_r = []
+	notConverged = True	
+	epsilon = .001
 	
 	## NEED WHILE LOOP IN CONVERGENCE
+	while notConverged 
+	    old_clusters = clusters
 	# main for loop
-	for x in freq.keys():
-	    d = dict()
+	    for x in freq.keys():
+		d = dict()
 
-	    for cluster_mean in clusters.assignments.keys():
-		d[cluster_mean] = np.power((x - cluster_mean),2) #squared difference between x and cluster mean
-		min_d = min(d.values())
-		new_cluster = min(d, key=d.get)  #get cluster mean with minimum distance from x
+		for cluster_mean in clusters.assignments.keys():
+		    d[cluster_mean] = np.power((x - cluster_mean),2) #squared difference between x and cluster mean
+		    min_d = min(d.values())
+		    new_cluster = min(d, key=d.get)  #get cluster mean with minimum distance from x
 
-		if min_d - theta > lamb - np.log(clusters.c)*theta:
-		    D_r.append(x) 
+		    if min_d - theta > lamb - np.log(clusters.c)*theta:
+			D_r.append(x) 
 
-		else:
-		    clusters = assign_cluster(x, new_cluster, clusters)
+		    else:
+			clusters = assign_cluster(x, new_cluster, clusters)
 
-	    clusters = re_cluster(D_r, clusters, freq, lamb, theta) #re-cluster the unclustered data set
-	    clusters = center_agglomeration(clusters, lamb, theta) #center agglomeration
-	    clusters = update(clusters, freq) #update c, re-compute cluster means
-
+		clusters = re_cluster(D_r, clusters, freq, lamb, theta) #re-cluster the unclustered data set
+		clusters = center_agglomeration(clusters, lamb, theta) #center agglomeration
+		clusters = update(clusters, freq) #update c, re-compute cluster means
+		notConverged = check_convergence(old_clusters, clusters, epsilon)
+		
 	return clusters
+
+    def __check_convergence(self, old_clusters, new_clusters, epsilon):
+
+	if old_clusters.c != new_clusters.c:
+	    return False
+
+	else:
+	    diff = np.subtract(new_clusters.assignments.keys(), old_clusters.assignments.keys())
+	    for elem in diff:
+		if elem > epsilon: 
+		    return False
+	    return True
+
 
 
     def __assign_clusters(self, x, new_cluster, clusters):
@@ -106,13 +124,13 @@ class Pyp_means(self):
 	    D_r.remove(x_1)
 	return clusters
 
-    def __agglomeration_procedure(self, clusters, lamb, theta):
+    def __agglomeration_procedure(self, clusters, freq, lamb, theta):
 	center_agglom = agglomeration_check(clusters, lamb, theta)
  
 	while center_agglom:
-	    
-	    clusters = combine_clusters(
-
+	    m1, m2 = center_agglom.pop() 
+	    clusters = combine_clusters(clusters, freq, m1, m2)
+	    center_agglom = agglomeration_check(clusters, lamb, theta)
 
 	return clusters
 
@@ -127,26 +145,22 @@ class Pyp_means(self):
 		d(i,j) = np.power(means(i) - means(j),2)	
 
 	center_agglom = []
-	for i,j in d.keys():
+	for m1, m2 in d.keys():
 	    n1 = len(clusters.assignments[i])
 	    n2 = len(clusters.assignments[j])
-	    if d(i,j) < (n1+n2)/(n1*n2)*(lamb - theta*(np.log(np.power(c+1, c+1)/np.power(c, c))
-		center_agglom.append((i,j))
+	    if d(m1, m2) < (n1+n2)/(n1*n2)*(lamb - theta*(np.log(np.power(c+1, c+1)/np.power(c, c))
+		center_agglom.append((m1, m2))
 
 	return center_agglom
-	   
-
-    def __center_agglomeration(self, clusters, lamb, theta):
-	
-	return clusters
     
     def __combine_clusters(clusters, freq, m1, m2):
 	cluster1 = clusters.assignments[m1]
 	cluster2 = clusters.assignments[m2]
 	N = len(cluster1) + len(cluster2)
-
+	# create new cluster
 	new_mean = (sum([x*freq[x] for x in cluster1]) + sum([x*freq[x] for x in cluster2]))/float(N) # calculate new cluster mean
 	clusters.assignments[new_mean] = cluster1  + cluster2
+	# remove 2 old clusters
 	clusters.assignments.pop(m1)
 	clusters.assignments.pop(m2)
 
