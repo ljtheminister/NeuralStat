@@ -1,6 +1,7 @@
 \documentclass{article}
 \usepackage[margin=1.0in]{geometry}
-
+\usepackage{algorithmic}
+\usepackage{algorithm}
 \begin{document}
 
 \title{Decoding of reaching movements of monkeys}
@@ -45,6 +46,7 @@ A center agglomeration procedure is also introduced to adaptively determine the 
 \section{Methodology}
 This paper implements nonparametric Bayesian clustering techniques on the local field potential (LFP) frequency spectrum to bin the power differently from the four frequency bands as used by Flint (2013).  
 
+For dimensionality reduction, this paper performs principal component analysis (PCA) as well as kernelized principal component analysis (k-PCA).  Then, various classification algorithms are applied to the eight-target classification problem.	
 
 
 \section{Results}
