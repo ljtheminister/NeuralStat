@@ -28,7 +28,7 @@ class Pyp_means(self):
 	epsilon = .001
 	
 	## NEED WHILE LOOP IN CONVERGENCE
-	while notConverged 
+	while notConverged:
 	    old_clusters = clusters
 	# main for loop
 	    for x in freq.keys():
