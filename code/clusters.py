@@ -1,10 +1,8 @@
 import pandas as pd
 from collections import defaultdict
 
-
-
 class Cluster():
     def __init__(self):
-	self.assignments = dict() #key is mean, values are the indices of x in values
-	self.map = list()
-	self.c = 0
+	self.assignments = dict() #key is mean, values are lists of data points inside that cluster
+	self.map = dict() #maps data points to cluster
+	self.c = 0 #number of clusters
