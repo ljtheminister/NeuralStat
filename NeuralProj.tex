@@ -1,31 +1,27 @@
 \documentclass{article}
 \usepackage[margin=1.0in]{geometry}
-\usepackage{algorithmic}
-\usepackage{algorithm}
+\usepackage{graphicx, algorithmic, algorithm}
+
+
 \begin{document}
 
 \title{Decoding of reaching movements of monkeys}
+\author{John Min}
 \maketitle
-
 
 \section{Introduction}
 
-Ebullient research in the the field of brain-machine interfaces (BMIs) has 
-choosing the optimal input signal source for a desired application.  
-
-Single neuron action potentials or spikes, the signals with highest bandwith, are generally difficult to record after a few years after implantation due to the deterioration of the intracortical electrodes.  
+The field of brain-machine interfaces (BMIs) is ebulliently researching the optimal input signal source for desired applications.  Because intracortical electrodes deterioriate significantly after several years, recording single neuron action potentials or spikes, the signals with highest bandwith, becomes difficult.  Fortunately, field potentials recorded within the cortex (local field potentials, LFPs), at its surface (electrocorticograms, ECoG), and at the dural surface (epidural, EFPs) also contain significant information.  Flint et. al[1] analyzes data on monkey arm reaching movements and scrutinizes decoding performance of velocity, position, and target classification between spikes, LFPs, and EFPs.  The study demonstrates that the LFP contains significant movement-related information, even in the absence of spike records on the same electrodes, and thus, concludes that LFPs could provide a robust, accurate signal source for BMIs.  Consequently, this paper investigates an alternative methodology, seeking to improve prediction rates on the reach movement classification task.  
 
 
-
-
-Flint et. al (2012) 
-
-
-
-\section{Experiment}
+\section{Flint et. al (2012)}
+\subsection{Experiment}
 A rhesus monkey was trained to perform an eight-target, center-out task while holding onto a two-link manipulandum.  Eight 2 cm square outer targets spaced at 45$\,^{\circ}$ intervals around a circle of radius 10 cm.  Each trial begins with the illumination of the center target.  After a random hold time of 0.5-0.6 seconds, the center target disappears and a randomly selected outer target is illuminated, signaling the monkey to perform a reach movement.  The monkey must reach the outer target within 1.5 seconds and hold for a random time between 0.2 and 0.4 seconds to obtain a liquid reward.  
 
-\section{Flint et. al(2012}
+\subsection{Electrode recording}
+Field potentials were obtained by band-pass filtering between 0.5 and 500 Hz and sampling at 2 kHz.  The signals were then digitally notch filtered at 120, 180, and 240 Hz to remove line noise.  
+
+\subsection{Methodology: feature extraction, feature selection, and decoder}
 \noindent
 Flint et. al (2012) convert the spike signals to firing rates in 100 ms bins, extracting five features from each field potential signal:  the local motor potential (LMP), defined as the moving average within a 256 ms window, and the power in four different frequency bands (0-4, 7-20, 70-200, and 200-300 Hz).  The windows are overlapped by 145 ms to provide a sample every 100 ms.  After applying a Hanning window, fast Fourier transforms are applied to 256 ms windows to compute the power in each band.   \\
 
@@ -33,17 +29,49 @@ Flint et. al (2012) convert the spike signals to firing rates in 100 ms bins, ex
 The band power values (or spike firing rates) in seven time bins from 200 ms before to 500 ms after movement onset (as determined from the manipulandum's velocity) are used as features, providing 35 features for each field potential electrode (1995 features for the 57 electrodes in monkey C).  A one-way ANOVA is calculated over all the trials for each feature across reach targets as a method of reduce dimensionality of the input space.  40 features with the lowest p-values are chosen for use in decoding each file.  \\
 
 \noindent
-Linear discrminant analysis is applied to these features and ten-fold cross validation evaluates performance.  The mean performance for each file is defined as the fraction of trials that were decoded correctly over the ten test folds.  Chance performance for the center-out task was estimated by randomly shuffling the target labels, and then performing teh cross validation.
+Linear discrminant analysis is applied to these features and ten-fold cross validation evaluates performance.  The mean performance for each file is defined as the fraction of trials that were decoded correctly over the ten test folds.  Chance performance for the center-out task was estimated by randomly shuffling the target labels, and then performing the cross validation.
 
 \section{Nonparametric Bayesian Clustering}
-\noindent
-Fan, Zeng, and Cao (2013) propose a modification to "DP-means", which bridged the classic k-means clustering and the nonparametric Dirichlet Process Gaussian Mixture Model (DPGMM), by introducing a modified Pitman-Yor Process based k-means (pyp-means).  Pyp-means can be applied to cluster power-law data by dynamically and adaptively changing the threshold to guarantee the generation of poewr-law clustering results.  The threshold becomes smaller as the cluster number increases.  \\
+
+\subsection{Dirichlet process means (DP-means)}
+Kulis and Jordan propose "DP-means" which bridges the classic k-means algorithm and the Bayesian nonparametric Dirichlet Process Guassian Mixture Model (DPGMM).  "DP-means" introduces a fixed threshold to determine whether a data point should belong to an existing cluster or a new cluster should be created for it.  The algorithm is layed out as follows: \\
 
 \noindent
-A center agglomeration procedure is also introduced to adaptively determine the number of clusters and avoid overfitting the power-law distribution of the data.  The clustering mechanism may result in two dense clusters whose means are quite close to each other.  The center agglomeration procedure will combine such clusters.  Essentially, the agglomeration check verifies that the inter-distance between each pair of cluster means is above a certain threshold 
+\includegraphics{dpmeans.pdf}
+
+\subsection{Pitman Yor Process means (Pyp means)}
+\noindent
+Fan, Zeng, and Cao (2013) propose a modification to "DP-means" to address issues such as power-law data applicability, over-fitting, and data order-dependence: a modified Pitman-Yor Process based k-means (pyp-means) that can be applied to cluster power-law data and adaptively determine the number of clusters.  Unlike the fixed threshold in \emph{dp-means}, the modified Pitman-Yor-Process defines a variable threshold that is based on the number of existing clusters.  As the cluster number increases, the threshold value and thus, the probability of new cluster generation gets smaller.  \emph{Pyp-means} also introduces a center agglomeration procedure to prevent overfitting.  The procedure computes inter-distance and densities of each cluster pair and combines two clusters in close proximity if they satisfy the agglomeration condition.  Finally, the algorithm employs a heuristic "furthest first" strategy when generating new clusters to tackle the issue that clustering algorithms face with data order.  In summary, the full implementation consists of three procedures:  data partition, center recalculation, and center agglomeration.  The details of the algorithm are shown below:
+\subsubsection{Algorithm 1: pyp means}
+\noindent
+The first algorithm does the initial clustering and leaves points that are too far away from existing center means to be re-clustered in the second algorithm. \\
+\includegraphics{pyp1.pdf} 
+
+\subsubsection{Algorithm 2: re-clustering on $D_r$}
+
+The second algorithm uses the "furthest first" heuristic search method as a way to generate clusters uniformly with respect to the order of the data. \\
+\includegraphics{pyp2.pdf}
+
+\subsubsection{Center Agglomeration Procedure}
+\noindent
+The agglomeration procedure check looks as follows for each pair of clusters $i, j$:
+$$ ||\mu_1 - \mu_2||^2 < \frac{n_1 + n_2}{n_1 n_2} (\lambda - \theta ln \frac{(c+1)^{(c+1)}}{c^c}) $$
+If this condition is satisfied, the two clusters are combined and the mean is recomputed.  The check is done recursively until no pair of clusters satisfy the agglomeration condition.
 
 
 \section{Methodology}
+
+The Flint paper\cite{flint} extracts five features from each field potential signal:  the local motor potential, defined as the moving average within a 256 ms window, and the power in four different frequency bands (0-4, 7-20, 70-200, 200-300 Hz).
+
+Instead of movement offset
+
+The band power values (or spike firing rates) are determined for seven time bins, each of 100 ms, from 200 ms before to 500 ms after movement onset as determined from the manipulandum's velocity.  When examining the monkey's hand velocity, this 700 ms period generally embodied the entire reach movement from slow velocity in the right direction of the target to the more rapid reach movement to the slowing of the velocity as the monkey holds the arm position.  
+
+
+Instead of performing dimension reduction, I go straight into classification.
+I also perform PCA to square root of number of original features
+
+
 This paper implements nonparametric Bayesian clustering techniques on the local field potential (LFP) frequency spectrum to bin the power differently from the four frequency bands as used by Flint (2013).  
 
 For dimensionality reduction, this paper performs principal component analysis (PCA) as well as kernelized principal component analysis (k-PCA).  Then, various classification algorithms are applied to the eight-target classification problem.	
@@ -53,4 +81,13 @@ For dimensionality reduction, this paper performs principal component analysis (
 
 \section{Discussion}
 
+\begin{thebibliography}{9}
+
+\bibitem{flint}
+Flint, Robert D., Lindberg, Eric W., Jordan, Luke R., Miller, Lee E., and Slutzky, Marc W. (2012) Accurate decoding of reaching movements from field potentials in the absence of spikes.  Journal of Neural Engineering 9: 046006. 
+
+\bibitem{pyp}
+Fan, Xuhui, Zeng, Yiling, Cao, Longbing. (2013) Non-parametric Power-law Data Clustering.  arXiv:1306.3003.
+
+\end{thebibliography}
 \end{document}
