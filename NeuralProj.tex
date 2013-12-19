@@ -4,9 +4,9 @@
 
 
 \begin{document}
-
+\date{}
 \title{Decoding of reaching movements of monkeys}
-\author{John Min}
+\author{John Min\\ jcm2199}
 \maketitle
 
 \section{Introduction}
@@ -23,7 +23,7 @@ Field potentials were obtained by band-pass filtering between 0.5 and 500 Hz and
 
 \subsection{Methodology: feature extraction, feature selection, and decoder}
 \noindent
-Flint et. al (2012) convert the spike signals to firing rates in 100 ms bins, extracting five features from each field potential signal:  the local motor potential (LMP), defined as the moving average within a 256 ms window, and the power in four different frequency bands (0-4, 7-20, 70-200, and 200-300 Hz).  The windows are overlapped by 145 ms to provide a sample every 100 ms.  After applying a Hanning window, fast Fourier transforms are applied to 256 ms windows to compute the power in each band.   \\
+Flint et. al (2012) convert the spike signals to firing rates in 100 ms bins, extracting five features from each field potential signal:  the local motor potential (LMP), defined as the moving average within a 256 ms window, and the power in four different frequency bands (0-4, 7-20, 70-200, and 200-300 Hz).  The windows are overlapped by 156 ms to provide a sample every 100 ms.  After applying a Hanning window, fast Fourier transforms are applied to 256 ms windows to compute the power in each band.   \\
 
 \noindent
 The band power values (or spike firing rates) in seven time bins from 200 ms before to 500 ms after movement onset (as determined from the manipulandum's velocity) are used as features, providing 35 features for each field potential electrode (1995 features for the 57 electrodes in monkey C).  A one-way ANOVA is calculated over all the trials for each feature across reach targets as a method of reduce dimensionality of the input space.  40 features with the lowest p-values are chosen for use in decoding each file.  \\
@@ -58,28 +58,45 @@ The agglomeration procedure check looks as follows for each pair of clusters $i,
 $$ ||\mu_1 - \mu_2||^2 < \frac{n_1 + n_2}{n_1 n_2} (\lambda - \theta ln \frac{(c+1)^{(c+1)}}{c^c}) $$
 If this condition is satisfied, the two clusters are combined and the mean is recomputed.  The check is done recursively until no pair of clusters satisfy the agglomeration condition.
 
-
+\pagebreak
 \section{Methodology}
 
-The Flint paper\cite{flint} extracts five features from each field potential signal:  the local motor potential, defined as the moving average within a 256 ms window, and the power in four different frequency bands (0-4, 7-20, 70-200, 200-300 Hz).
+\noindent
+Analogous to the Flint paper\cite{flint}, the power of LFP frequencies are computed by applying a Hanning window and then applying fast Fourier transforms to 256 windows.  Providing a sample every 100 ms, the windows were overlapepd by 156 ms.  The time of movement onset was estimated using the manipulandum's velocity where the Euclidean norm of the velocity had to be above a fixed threshold (in this case, .0125 for unknown units).  Then, seven time bins from 200 ms before to 500 ms after movement onset are used to compute the LFP power values.  When examining the monkey's hand velocity, this 700 ms period generally embodied the entire reach movement from slow velocity in the right direction of the target to the more rapid reach movement to the slowing of the velocity as the monkey holds the arm position.  Before and after this time period, the hand velocity is much smaller and maybe even in the wrong direction. \\
 
-Instead of movement offset
+\noindent
+The power of the LFP in the frequency range 0-1000 Hz is computed for this 700 ms period where the range is discretized and linearly spaced into 257 values for the 95 LFP electrodes.  The Flint paper\cite{flint} extracts five features from each field potential signal:  the local motor potential, defined as the moving average within a 256 ms window, and the power in four different frequency bands (0-4, 7-20, 70-200, 200-300 Hz).  They use the power in these bands relative to the power during the period from 2.0 to 1.5 s before movement onset, when the monkey is not reaching.  I choose to compute the rest power of the LFP for the first 700 ms of a trial before a light is flashed.  If a light is illuminated within the first 700 ms of the trial, I examine the LFP for a 700 ms period, 15 ms after the reach-out light is turned off.  As the target light is illuminated between 0.5 and 0.6 s, the monkey's hand velocity dramatically decreases and the monkey seems to return to a "rest" position 15 ms after the reach-out light is turned off.  In reality what is going on is that the monkey has reached the outer target and is maintaining a hold to obtain the liquid reward, which she must do for 200 to 400 ms.  I assume that this "hold" position is similar to the monkey at rest before a trial begins, in terms of brain activity and power of the LFP frequencies . \\
 
-The band power values (or spike firing rates) are determined for seven time bins, each of 100 ms, from 200 ms before to 500 ms after movement onset as determined from the manipulandum's velocity.  When examining the monkey's hand velocity, this 700 ms period generally embodied the entire reach movement from slow velocity in the right direction of the target to the more rapid reach movement to the slowing of the velocity as the monkey holds the arm position.  
+\noindent
+The data is then aggregated into a flat vector for each trial/observation.  As there are five features in each of the 7 time bins for 95 electrodes collecting LFPs, there are 3325 features for each trial.  Instead of a one-way ANOVA test on features\cite{flint} for dimensionality reduction, this paper performs principal component analysis (PCA) before moving onto the classification task.  The 3325-length feature vector is reduced to 58 features (I choose to reduce the dimensionality by a factor of $\sqrt{D}$, where $D$ represents the size of the feature space).  After performing an approximate 80-20 split on the data using random sample to partition the train and test sets, I train the data using various classification techniques and evaluate prediction accuracy where the classification error is binary.  I implement Linear Discriminant Analysis (LDA), multi-class Support Vector Machine (SVM)\footnote{The multi-class SVM is an implementation of the libsvm package which employs the 'one-vs.-one' approach for C-classification problems, meaning that k(k-1)/2 binary classifiers are trained and then, the appropriate class is determined by vote.  The SVM uses the radial basis kernel (RBF) with $\gamma=\frac{1}{D}$, where $D$ is the dimensionality of the data, and $C=1$, where $C$ is the coefficient of the slack variables.}
+, and k-Nearest Neighbors (k-NN) to train the models.\\
 
+\noindent
+The next step is to form clusters based on the Bayesian nonparametric clustering algorithms discussed above.  But I ran into a problem after performing the clustering algorithms:  due to the large number of clusters that had been formed, memory became a valuable and scarce resource.  With feature vectors of lengths greater than 50,000, I found it to be infeasible given the computing power that I was dealing with to be able to train the model, perform the various classification techniques, and evluate if this approach to clustering would have improved classification accuracy. \\
 
-Instead of performing dimension reduction, I go straight into classification.
-I also perform PCA to square root of number of original features
-
-
-This paper implements nonparametric Bayesian clustering techniques on the local field potential (LFP) frequency spectrum to bin the power differently from the four frequency bands as used by Flint (2013).  
-
-For dimensionality reduction, this paper performs principal component analysis (PCA) as well as kernelized principal component analysis (k-PCA).  Then, various classification algorithms are applied to the eight-target classification problem.	
-
-
+\pagebreak
 \section{Results}
+\noindent
+While there may be fixed feelings about the methodology section, the results seem promising.  With 1281 trials in the full dataset, the 80-20 training-split left 256 cases for testing.  Before applying PCA, I perform the classification and achieve the following results after 10 runs:  90.23\% accuracy (231/256 correctly identified) with L.D.A., 85.23\% accuracy with k-NN (218.2/256 on average).  After reducing the dimensionality of the data by considering the first 58 principal components, I re-try the classification task and run it 100 times.  The LDA averages 239.16 correct classifications (93.42\%) whereas the k-NN accurately predicts 217.78 (85.07\%) out of the 256 test cases.  While the multi-class SVM was not run with the full dataset, it performed almost as well as the LDA averaging 235.38 correct classifications out of 256 (91.95\%).  \\
 
-\section{Discussion}
+\noindent
+These results demonstrate stronger prediction accuracies than that of the given methodology\cite{flint}\footnote{Flint et. all accurately classify the target at a rate of 86\%.}.  It is evident that these classifiers were effective as the class distributions were quite even:  \\
+\noindent
+\begin{table}[h]
+\begin{tabular}{lllllllll}
+1   & 2   & 3   & 4   & 5   & 6   & 7   & 8   \\
+NW  & N   & NE  & W   & E   & SW  & S   & SE  \\
+168 & 167 & 151 & 163 & 166 & 163 & 153 & 150
+\end{tabular}
+\end{table}
+
+\section{Future work}
+\noindent
+\begin{centering}
+\includegraphics[scale=0.5]{e5.pdf}
+\end{centering}
+This is a plot demonstrating the distribution of frequencies for one of the data files.  It is evident that the distribution of ferquency amplitudes can be characterized by a power-law distribution.   Thus, the B.N.P. approach to clustering the frequencies appears to be an appropriate choice.  It is to be determined whether this perhaps more thoughtful approach to binning the data would improve prediction performance.  Certainly, the next step beyond performing classification would be to predict reach movement details such as position, velocity, and acceleration and use more sophisticated machine learning algorithms when performing these tasks.
+
 
 \begin{thebibliography}{9}
 
