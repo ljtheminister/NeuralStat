@@ -1,5 +1,6 @@
-function fft_mat= fftLFP(rawLFP, len, overlap)
-%% This function uses a hanning window multiplier and then performs a FFT 
+
+function [fft_mat] = fftLFP(rawLFP, len, overlap)
+%%% This function uses a hanning window multiplier and then performs a FFT 
 % rawLFP - raw LFP data, should be a double
 % length - the number of elements in the raw LFP per window (256 ms windows in the paper)
 % overlap - the nubmer of elements to overlap per LFP window (156 ms of overlap in the paper)
